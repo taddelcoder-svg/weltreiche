@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#2a1d10">
+<title>Weltreiche</title>
+<style>
+  :root{
+    --gold:#e8c170;--gold-dunkel:#9a6b1f;--pergament:#f4e8cc;--pergament-2:#e9d8b0;--tinte:#2e2012;--tinte-leise:#6b5536;
+    --nacht:rgba(28,19,9,.88);--rand:#b99356;
+    --schrift:"Palatino Linotype","Book Antiqua",Palatino,"URW Palladio L",Georgia,serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#2a1d10;color:var(--tinte);font:16px/1.4 var(--schrift);
+    user-select:none;-webkit-user-select:none;touch-action:none}
+  #szene{position:fixed;inset:0}
+  #szene canvas{display:block;width:100%;height:100%}
+  button{font:inherit;cursor:pointer;color:inherit}
+  [hidden]{display:none!important}
+  #schilder,#linien{position:fixed;inset:0;pointer-events:none}
+  #linien{width:100%;height:100%}
+
+  /* Zahlen über Städten und Trupps */
+  .schild{position:absolute;left:0;top:0;min-width:34px;padding:2px 9px 3px;border-radius:12px;text-align:center;
+    color:#fff;font-weight:700;font-size:16px;line-height:1.1;border:2px solid rgba(0,0,0,.28);
+    text-shadow:0 1px 2px rgba(0,0,0,.45);white-space:nowrap;will-change:transform}
+  .schild.neutral{color:var(--tinte);text-shadow:none;background:#efe6d2}
+  .schild.mein{border-color:#fff8e0;box-shadow:0 0 0 2px rgba(0,0,0,.25)}
+  .schild small{display:block;font-size:10px;letter-spacing:2px;line-height:1;opacity:.9}
+  .trupp{position:absolute;left:0;top:0;padding:0 6px;border-radius:8px;color:#fff;font-weight:700;font-size:13px;
+    border:1.5px solid rgba(0,0,0,.3);text-shadow:0 1px 2px rgba(0,0,0,.5);will-change:transform}
+
+  /* HUD */
+  #hud{position:fixed;left:0;right:0;top:0;pointer-events:none;padding:max(10px,env(safe-area-inset-top)) 12px 0}
+  #kraft{display:flex;align-items:center;gap:10px;max-width:640px;margin:0 auto}
+  #kraft .name{color:#fff;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.7);font-size:15px;white-space:nowrap}
+  #balken{flex:1;display:flex;height:14px;border-radius:7px;overflow:hidden;background:#efe6d2;border:2px solid rgba(0,0,0,.35)}
+  #balken i{display:block;height:100%;transition:width .4s}
+  #uhr{text-align:center;color:#fff;font-size:14px;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+  #meldung{position:fixed;left:50%;top:70px;transform:translateX(-50%);pointer-events:none;padding:6px 16px;border-radius:18px;
+    background:var(--nacht);color:var(--pergament);border:1px solid var(--rand);font-size:15px;opacity:0;transition:opacity .3s;white-space:nowrap}
+  #meldung.an{opacity:1}
+  .rund{position:fixed;width:46px;height:46px;border-radius:50%;border:2px solid var(--rand);background:var(--nacht);color:var(--gold);
+    font-size:20px;display:grid;place-items:center}
+  #pauseKnopf{top:max(10px,env(safe-area-inset-top));right:12px}
+  #tonKnopf{top:max(10px,env(safe-area-inset-top));right:66px}
+  /* Schmale Bildschirme: Knöpfe nach unten rechts, damit die Kraftanzeige Platz hat */
+  @media (max-width:700px){
+    #pauseKnopf,#tonKnopf{top:auto;bottom:max(14px,env(safe-area-inset-bottom))}
+    #tonKnopf{right:64px}
+    #anteil button{min-width:46px}
+    #anteil span{display:none}
+    #kraft .name{font-size:14px}
+  }
+  #anteil{position:fixed;left:12px;bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:6px;padding:6px;border-radius:14px;background:var(--nacht);border:1px solid var(--rand)}
+  #anteil button{min-width:54px;padding:8px 6px;border-radius:9px;border:0;background:transparent;color:var(--pergament);font-weight:700;font-size:16px}
+  #anteil button.aktiv{background:var(--gold);color:var(--tinte)}
+  #anteil span{align-self:center;color:var(--pergament-2);font-size:12px;padding:0 4px 0 6px;line-height:1.1}
+  #tipp{position:fixed;left:50%;top:max(64px,calc(env(safe-area-inset-top) + 56px));transform:translateX(-50%);width:min(92vw,520px);
+    padding:10px 14px;border-radius:12px;background:var(--nacht);color:var(--pergament);border:1px solid var(--rand);text-align:center;font-size:15px;pointer-events:none;transition:opacity .5s}
+
+  /* Ringmenü an einer Stadt */
+  #ring{position:fixed;left:0;top:0;transform:translate(-50%,calc(-100% - 46px));pointer-events:auto}
+  #ringKnoepfe{display:grid;grid-template-columns:repeat(2,auto);gap:6px}
+  #ring button{display:flex;flex-direction:column;align-items:center;min-width:104px;padding:6px 10px;border-radius:12px;
+    background:var(--pergament);border:2px solid var(--gold-dunkel);color:var(--tinte);font-weight:700;box-shadow:0 4px 0 rgba(0,0,0,.3)}
+  #ring button small{font-weight:400;color:var(--tinte-leise);font-size:12px}
+  #ring button:disabled{opacity:.5;cursor:default}
+  #ring button:not(:disabled):active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+  #ringInfo{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:4px;padding:2px 10px;border-radius:9px;background:var(--nacht);color:var(--pergament);font-size:12px;white-space:nowrap}
+  #ringInfo:empty{display:none}
+
+  /* Spezialfähigkeit */
+  #kraftKnopf{position:fixed;right:14px;bottom:max(14px,env(safe-area-inset-bottom));width:78px;height:78px;border-radius:50%;padding:0;border:2px solid var(--rand);
+    background:conic-gradient(var(--gold) var(--f,0%),rgba(28,19,9,.88) 0);display:grid;place-items:center}
+  #kraftKnopf span{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:27px;color:#fff;background:var(--reich,#555);
+    text-shadow:0 1px 2px rgba(0,0,0,.5);opacity:.55;transition:opacity .2s}
+  #kraftKnopf.bereit span{opacity:1}
+  #kraftKnopf.bereit{animation:pochen 1.3s ease-in-out infinite}
+  @keyframes pochen{50%{box-shadow:0 0 0 7px rgba(232,193,112,.45)}}
+  #kraftName{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 82px);width:110px;text-align:right;color:#fff;font-size:13px;
+    text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none}
+  #zielHinweis{position:fixed;left:50%;top:max(64px,calc(env(safe-area-inset-top) + 56px));transform:translateX(-50%);display:flex;gap:10px;align-items:center;
+    padding:8px 10px 8px 16px;border-radius:14px;background:var(--nacht);color:var(--pergament);border:2px solid var(--gold);white-space:nowrap}
+  #zielHinweis button{padding:5px 12px;border-radius:9px;border:1px solid var(--rand);background:transparent;color:var(--pergament)}
+  .spielerpunkt{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 3px 0 8px;border:1px solid rgba(0,0,0,.4)}
+
+  /* Menüs */
+  .schicht{position:fixed;inset:0;display:grid;place-items:center;padding:16px;overflow-y:auto;background:rgba(20,13,6,.35)}
+  .karte{width:min(620px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;background:var(--pergament);border:3px solid var(--gold-dunkel);border-radius:18px;
+    padding:22px 22px 18px;box-shadow:0 12px 40px rgba(0,0,0,.45),inset 0 0 0 4px var(--pergament),inset 0 0 0 5px var(--rand)}
+  .karte.klein{width:min(400px,100%);text-align:center}
+  #menue .karte{width:min(620px,100%)}
+  @media (min-width:900px){
+    #menue .karte{width:min(1000px,100%)}
+    .menue-raster{display:grid;grid-template-columns:1.15fr 1fr;gap:26px;align-items:start}
+    .menue-raster .reiche{grid-template-columns:1fr 1fr}
+  }
+  #karteWahl .wahl{min-width:96px}
+  h1{margin:0;text-align:center;font-size:clamp(2.2rem,8vw,3.2rem);letter-spacing:4px;font-weight:700;color:var(--tinte);
+    text-transform:uppercase;line-height:1}
+  h1::after{content:"";display:block;width:140px;height:3px;margin:10px auto 0;background:linear-gradient(90deg,transparent,var(--gold-dunkel),transparent)}
+  .unter{text-align:center;margin:8px 0 14px;color:var(--tinte-leise);font-style:italic}
+  h2{margin:16px 0 8px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dunkel)}
+  .reiche{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+  .reich{display:flex;gap:10px;align-items:center;text-align:left;padding:8px 10px;border-radius:12px;border:2px solid transparent;background:var(--pergament-2)}
+  .reich:hover{border-color:var(--rand)}
+  .reich.aktiv{border-color:var(--tinte);background:#fff6df}
+  .reich:focus-visible,.wahl:focus-visible,.gross:focus-visible,.knopf:focus-visible{outline:3px solid var(--tinte);outline-offset:2px}
+  .wappen{flex:none;width:42px;height:46px;display:grid;place-items:center;color:#fff;font-size:21px;
+    clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .reich b{display:block;font-size:17px}
+  .reich small{display:block;color:var(--tinte-leise);font-size:12.5px;line-height:1.25}
+  .reihe{display:flex;gap:8px;flex-wrap:wrap}
+  .wahl{flex:1 1 0;min-width:90px;padding:9px 8px;border-radius:10px;border:2px solid transparent;background:var(--pergament-2);font-weight:700}
+  .wahl.aktiv{border-color:var(--tinte);background:#fff6df}
+  .gross{display:block;width:100%;margin:18px 0 10px;padding:13px;border-radius:14px;border:2px solid #6d4a12;
+    background:linear-gradient(180deg,#f3d27e,#d9a441);color:var(--tinte);font-size:1.35rem;font-weight:700;letter-spacing:1px;box-shadow:0 5px 0 #6d4a12}
+  .gross:active{transform:translateY(3px);box-shadow:0 2px 0 #6d4a12}
+  .knopf{padding:10px 18px;border-radius:12px;border:2px solid var(--gold-dunkel);background:var(--pergament-2);font-weight:700}
+  .knopfreihe{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  details{color:var(--tinte-leise);font-size:15px}
+  summary{cursor:pointer;color:var(--tinte);font-weight:700}
+  details ul{margin:6px 0 0;padding-left:20px}
+  .fuss{margin-top:12px;text-align:center;font-size:13px;color:var(--tinte-leise)}
+  .fuss a{color:var(--gold-dunkel)}
+  .statistik{display:grid;gap:4px 12px;text-align:left;margin:12px auto 0;max-width:380px;font-size:15px}
+  .reihe .wahl small{display:block;font-weight:400;font-size:12px;color:var(--tinte-leise)}
+  .wahl:disabled{opacity:.4;cursor:default}
+  .reich small i{font-style:normal;color:var(--gold-dunkel)}
+  .statistik b{text-align:right}
+  .ende-titel{font-size:2.4rem;margin:0;letter-spacing:3px;text-transform:uppercase}
+  .knopf.breit{display:block;width:100%}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  #online .karte{width:min(620px,100%)}
+  @media (min-width:900px){ #online .karte{width:min(900px,100%)} }
+  .feld{display:block;font-weight:700;margin:6px 0 4px}
+  .feld input,#raumCode{display:block;width:100%;margin-top:6px;padding:10px 12px;border-radius:10px;border:2px solid var(--rand);
+    background:#fffaf0;color:var(--tinte);font:inherit;font-size:18px}
+  .klein{font-size:13px;color:var(--tinte-leise);margin:4px 0 0}
+  .beitreten{display:flex;gap:8px;align-items:stretch;margin-top:4px}
+  #raumCode{margin:0;text-transform:uppercase;letter-spacing:6px;text-align:center;font-weight:700;flex:1}
+  .fehler{color:#a4231b;font-weight:700;min-height:1.2em;margin:10px 0 0}
+  .raumcode{text-align:center;margin:10px 0 0;font-size:18px}
+  .raumcode b{display:inline-block;margin-left:8px;padding:4px 14px;border-radius:10px;background:var(--tinte);color:var(--gold);letter-spacing:6px;font-size:28px}
+  #raumSpieler{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+  #raumSpieler li{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;background:var(--pergament-2)}
+  #raumSpieler li .wappen{width:30px;height:33px;font-size:15px}
+  #raumSpieler li small{color:var(--tinte-leise);margin-left:auto}
+  .wappenreihe{display:flex;flex-wrap:wrap;gap:6px}
+  .wappenreihe button{border:2px solid transparent;background:var(--pergament-2);border-radius:10px;padding:4px;display:flex;flex-direction:column;align-items:center;min-width:70px;font-size:12px}
+  .wappenreihe button.aktiv{border-color:var(--tinte);background:#fff6df}
+  .wappenreihe button:disabled{opacity:.35;cursor:default}
+  .wappenreihe .wappen{width:34px;height:37px;font-size:17px}
+  #raumEinst .reihe{margin-bottom:8px}
+  #raumEinst p{margin:0 0 6px}
+  /* Handy: Fähigkeit über Ton/Pause, kompakteres Ringmenü (steht hinter den Grundregeln, damit es gilt) */
+  @media (max-width:700px){
+    #kraftKnopf{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 58px);width:70px;height:70px}
+    #kraftKnopf span{width:56px;height:56px;font-size:24px}
+    #kraftName{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 132px)}
+    #ring button{min-width:0;padding:5px 9px;font-size:14px}
+    #ring button small{font-size:11px}
+  }
+</style>
+</head>
+<body>
+<div id="szene"></div>
+<svg id="linien" aria-hidden="true"></svg>
+<div id="schilder" aria-hidden="true"></div>
+
+<div id="spielUi" hidden>
+  <div id="hud">
+    <div id="kraft"><span class="name" id="nameA"></span><div id="balken"></div><span class="name" id="nameB"></span></div>
+    <div id="uhr">0:00</div>
+  </div>
+  <button class="rund" id="tonKnopf" aria-label="Ton an oder aus">🔊</button>
+  <button class="rund" id="pauseKnopf" aria-label="Pause">❚❚</button>
+  <div id="anteil" role="group" aria-label="Wie viele Truppen losschicken">
+    <span>Truppen<br>schicken</span>
+    <button data-a="0.25">25%</button><button data-a="0.5" class="aktiv">50%</button><button data-a="1">100%</button>
+  </div>
+  <div id="tipp">Ziehe von deiner Stadt zu einer anderen, um Truppen loszuschicken.<br>Tippe auf deine Stadt, um sie auszubauen.</div>
+  <div id="meldung" role="status"></div>
+  <div id="ring" hidden><div id="ringKnoepfe"></div><div id="ringInfo"></div></div>
+  <div id="kraftName"></div>
+  <button id="kraftKnopf" aria-label="Spezialfähigkeit einsetzen (Leertaste)"><span></span></button>
+  <div id="zielHinweis" hidden><span></span><button id="zielAbbrechen">Abbrechen</button></div>
+</div>
+
+<div class="schicht" id="menue">
+  <div class="karte">
+    <h1>Weltreiche</h1>
+    <p class="unter">Führe dein Reich zum Sieg – Stadt für Stadt.</p>
+    <div class="menue-raster">
+    <div>
+    <h2>Dein Reich</h2>
+    <div class="reiche" id="reichWahl"></div>
+    </div>
+    <div>
+    <h2>Gegner</h2>
+    <div class="reihe" id="anzahlWahl">
+      <button class="wahl" data-n="1">1 Gegner</button><button class="wahl" data-n="2">2 Gegner</button><button class="wahl" data-n="3">3 Gegner</button>
+    </div>
+    <div class="reihe" id="stufeWahl" style="margin-top:8px">
+      <button class="wahl" data-s="0">Leicht</button><button class="wahl aktiv" data-s="1">Mittel</button><button class="wahl" data-s="2">Schwer</button>
+    </div>
+    <h2>Karte</h2>
+    <div class="reihe" id="karteWahl"></div>
+    <button class="gross" id="start">Schlacht beginnen</button>
+    <button class="knopf breit" id="onlineOeffnen">🌍 Online mit Freunden spielen</button>
+    </div>
+    </div>
+    <details>
+      <summary>So wird gespielt</summary>
+      <ul>
+        <li>Deine Städte bilden laufend neue Truppen aus. Die Zahl zeigt, wie viele gerade drin sind.</li>
+        <li>Ziehe von deiner Stadt zu einer anderen, um Truppen loszuschicken. Wenn du beim Ziehen über mehrere eigene Städte fährst, schicken alle mit.</li>
+        <li>Mehr Angreifer als Verteidiger: Die Stadt gehört dir. Neutrale Städte (hell) wehren sich, bilden aber nichts aus.</li>
+        <li>Tippe auf deine Stadt: <b>Ausbauen</b> macht sie größer und schneller. Oder baue sie um: Ein <b>Turm</b> beschießt Feinde, eine <b>Schmiede</b> macht alle deine Truppen stärker, eine <b>Kaserne</b> bildet doppelt so schnell aus. Bezahlt wird mit Truppen.</li>
+        <li>Jedes Reich hat eine <b>Spezialfähigkeit</b>. Der runde Knopf unten rechts lädt sich mit der Zeit und bei Eroberungen auf (Leertaste).</li>
+        <li>Unten links stellst du ein, wie viele Truppen losgehen (auch mit den Tasten 1, 2, 3).</li>
+        <li>Kamera: Ziehen auf freier Fläche verschiebt, Mausrad oder zwei Finger zoomen, rechte Maustaste, Q/E oder zwei Finger drehen.</li>
+        <li>Gewonnen hat, wer alle feindlichen Städte und Truppen besiegt.</li>
+      </ul>
+    </details>
+    <p class="fuss">Prototyp · <a href="/datenschutz" target="_blank" rel="noopener">Datenschutz</a></p>
+  </div>
+</div>
+
+<div class="schicht" id="pause" hidden>
+  <div class="karte klein">
+    <p class="ende-titel">Pause</p>
+    <p class="unter" id="pauseText" hidden>Online läuft das Spiel für alle weiter.</p>
+    <div class="knopfreihe">
+      <button class="knopf" id="weiter">Weiter</button>
+      <button class="knopf" id="aufgeben">Aufgeben</button>
+    </div>
+  </div>
+</div>
+
+<div class="schicht" id="online" hidden>
+  <div class="karte">
+    <h1>Online</h1>
+    <div id="onlineStart">
+      <p class="unter">Spielt zusammen oder gegeneinander – jeder auf seinem eigenen Gerät.</p>
+      <label class="feld">Dein Spitzname<input id="onlineName" maxlength="16" autocomplete="nickname" spellcheck="false"></label>
+      <p class="klein">Bitte einen Spitznamen, nicht deinen vollen Namen. Alle im Raum sehen ihn.</p>
+      <button class="gross" id="raumNeu">Neuen Raum erstellen</button>
+      <div class="beitreten">
+        <label class="sr" for="raumCode">Raumcode</label>
+        <input id="raumCode" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
+        <button class="knopf" id="raumBeitreten">Beitreten</button>
+      </div>
+      <p class="fehler" id="onlineFehler" role="alert"></p>
+      <div class="knopfreihe"><button class="knopf" id="onlineZurueck">Zurück</button></div>
+    </div>
+    <div id="onlineRaum" hidden>
+      <p class="raumcode">Raum <b id="raumCodeAnzeige"></b></p>
+      <p class="unter">Gib den Code deinen Freunden. Sie tippen ihn unter „Online“ bei „Beitreten“ ein.</p>
+      <div class="knopfreihe" style="margin-top:0"><button class="knopf" id="raumTeilen">🔗 Einladungslink teilen</button></div>
+      <div class="menue-raster">
+        <div>
+          <h2>Im Raum</h2>
+          <ul id="raumSpieler"></ul>
+          <h2>Dein Reich</h2>
+          <div id="raumReiche" class="wappenreihe"></div>
+        </div>
+        <div>
+          <h2>Einstellungen</h2>
+          <div id="raumEinst"></div>
+          <button class="gross" id="raumStart">Schlacht beginnen</button>
+          <p class="klein" id="raumWarten" hidden>Der Gastgeber startet die Schlacht.</p>
+        </div>
+      </div>
+      <p class="fehler" id="raumFehler" role="alert"></p>
+      <div class="knopfreihe"><button class="knopf" id="raumVerlassen">Raum verlassen</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="schicht" id="ende" hidden>
+  <div class="karte klein">
+    <p class="ende-titel" id="endeTitel"></p>
+    <p class="unter" id="endeText"></p>
+    <div class="statistik" id="endeStats"></div>
+    <div class="knopfreihe">
+      <button class="knopf" id="nochmal">Nochmal</button>
+      <button class="knopf" id="zumMenue">Hauptmenü</button>
+    </div>
+  </div>
+</div>
+
+<script src="/vendor/three.min.js"></script>
+<script src="/logik.js"></script>
+<script src="/bauten.js"></script>
+<script src="/spiel.js"></script>
+<script src="/online.js"></script>
+</body>
+</html>
