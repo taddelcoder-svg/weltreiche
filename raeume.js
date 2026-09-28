@@ -237,7 +237,9 @@ function olympMelden(raum){
     const nachSp = new Map([...o.plaetze].map(([id, sp]) => [sp, id]));
     const liste = rang.filter(sp => nachSp.has(sp)).map(sp => {
       const staedte = z.staedte.filter(s => s.besitzer === sp).length;
-      return { s:nachSp.get(sp), text:z.spieler[sp].raus ? `raus nach ${minSek(z.spieler[sp].rausZeit || 0)}` : `${staedte} ${staedte === 1 ? 'Stadt' : 'Städte'}` };
+      // Leistung zum Vergleich zwischen Vorläufen: Überlebende nach Größe, Ausgeschiedene nach Durchhaltezeit
+      const wert = z.spieler[sp].raus ? Math.round((z.spieler[sp].rausZeit || 0) * 10) : 1_000_000 + Math.round(staerke(z, sp));
+      return { s:nachSp.get(sp), wert, text:z.spieler[sp].raus ? `raus nach ${minSek(z.spieler[sp].rausZeit || 0)}` : `${staedte} ${staedte === 1 ? 'Stadt' : 'Städte'}` };
     });
     olymp.rangMelden(o.t, liste);
     // Niemand mehr da: Raum nach einer Minute aufräumen
