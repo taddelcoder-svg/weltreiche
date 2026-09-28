@@ -1044,6 +1044,15 @@ function endeZeigen(){
   const sieger = z.ende && z.spieler[z.ende.sieger];
   $('#endeText').textContent = sieg ? (koop ? `Gemeinsam habt ihr die Insel erobert – nach ${zeit} Minuten.` : `Die ganze Insel gehört dir – nach ${zeit} Minuten.`)
     : sieger ? `${satz(z.ende.sieger, 'hat', 'haben')} die Insel erobert.` : `Dein Reich ist nach ${zeit} Minuten gefallen.`;
+  // Olympiade: Zeitlimit, Platz und der Weg zurück
+  const olymp = window.Online && window.Online.olympia;
+  if (z.ende && z.ende.zeitlimit) $('#endeText').textContent = sieg ? 'Die Zeit ist um – dein Reich ist das größte!' : `Die Zeit ist um – ${satz(z.ende.sieger, 'hat', 'haben')} das größte Reich.`;
+  if (olymp && olymp.rang){
+    const platz = olymp.rang.indexOf(ICH) + 1;
+    if (platz) $('#endeText').textContent += ` Platz ${platz} von ${olymp.rang.length} – das zählt für die Olympiade.`;
+  }
+  $('#nochmal').textContent = olymp ? 'Zurück zur Olympiade' : $('#nochmal').dataset.text || $('#nochmal').textContent;
+  $('#zumMenue').hidden = !!olymp;
   const sp = z.spieler, reihen = [
     ['Städte erobert', s => s.stats.erobert], ['Städte verloren', s => s.stats.verloren],
     ['Truppen ausgebildet', s => Math.round(s.stats.ausgebildet)], ['Fähigkeiten', s => s.stats.faehigkeiten]
@@ -1061,7 +1070,9 @@ $('#aufgeben').addEventListener('click', () => {
   if (verbindung){ aktion('aufgeben'); $('#pause').hidden = true; return; }
   L.aufgeben(z, ICH); zumMenue();
 });
+$('#nochmal').dataset.text = $('#nochmal').textContent;
 $('#nochmal').addEventListener('click', () => {
+  if (window.Online && window.Online.olympia) return window.Online.zurOlympiade();
   if (!verbindung) return spielStarten();
   // Online: zurück in den Raum, dort kann der Gastgeber neu starten
   const n = verbindung; verbindung = null; ICH = -1; beendet = false;

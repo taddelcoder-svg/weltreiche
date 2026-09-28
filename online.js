@@ -12,6 +12,31 @@ const speicher = {
 
 let ws = null, raum = null, imSpiel = false, gewollt = false;
 
+// Olympiade: Mit ?olymp=… im Link geht es direkt in den Raum des Vorlaufs (Ticket prüft der Server)
+const olympia = (() => {
+  let ticket = new URLSearchParams(location.search).get('olymp');
+  try {
+    if (ticket) sessionStorage.setItem('weltreiche.olymp', ticket);
+    else ticket = sessionStorage.getItem('weltreiche.olymp');
+  } catch {}
+  if (!ticket) return null;
+  history.replaceState(null, '', '/');
+  return { ticket, info:null, startBis:0, rang:null, vorbei:false };
+})();
+function olympiaBeenden(){ try { sessionStorage.removeItem('weltreiche.olymp'); } catch {} }
+function zurOlympiade(){
+  const ziel = olympia && olympia.info && olympia.info.zurueck;
+  olympiaBeenden();
+  gewollt = true;
+  if (ws){ senden({ t:'verlassen' }); ws.close(); }
+  location.href = ziel || '/';
+}
+async function olympLos(){
+  $('#onlineFehler').textContent = 'Verbinde mit der Olympia-Schlacht …';
+  try { await verbinden(); } catch { $('#onlineFehler').textContent = 'Keine Verbindung – neuer Versuch …'; setTimeout(olympLos, 3000); return; }
+  senden({ t:'olymp', ticket:olympia.ticket, reich:W.wahl.reich });
+}
+
 function senden(m){ if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); }
 function verbinden(){
   return new Promise((ok, fehler) => {
@@ -26,6 +51,8 @@ function verbinden(){
       const warImRaum = !!raum;
       raum = null;
       if (gewollt) return;
+      // Olympiade: einfach neu verbinden, der Server gibt das eigene Reich zurück
+      if (olympia && !olympia.vorbei){ setTimeout(olympLos, 1500); return; }
       if (imSpiel){ imSpiel = false; W.online.getrennt(); }
       else if (warImRaum){ zeigeStart(); fehlerZeigen('Die Verbindung wurde unterbrochen.'); }
     };
@@ -41,9 +68,17 @@ function empfangen(m){
   switch (m.t){
     case 'raum':
       raum = m;
+      if (olympia && m.olymp){ olympia.info = m.olymp; olympia.startBis = m.olymp.startIn != null ? Date.now() + m.olymp.startIn : 0; }
       if (!imSpiel) raumZeigen();
       break;
     case 'fehler':
+      if (m.olymp && olympia){
+        olympia.vorbei = true; olympiaBeenden();
+        $('#online').hidden = false; $('#menue').hidden = true; zeigeStart();
+        fehlerZeigen(m.text + ' Die Seite lädt gleich neu.');
+        setTimeout(() => location.replace('/'), 4000);
+        return;
+      }
       fehlerZeigen(m.text);
       break;
     case 'start':
@@ -55,6 +90,7 @@ function empfangen(m){
       if (imSpiel) W.online.stand(m);
       break;
     case 'ende':
+      if (olympia){ olympia.rang = m.rang || null; olympia.vorbei = true; olympiaBeenden(); }
       if (imSpiel) W.online.ende(m);
       break;
   }
@@ -94,6 +130,8 @@ function raumZeigen(){
   $('#online').hidden = false; $('#menue').hidden = true;
   $('#onlineStart').hidden = true; $('#onlineRaum').hidden = false;
   $('#raumCodeAnzeige').textContent = raum.code;
+  $('#olympBanner').hidden = !raum.olymp; $('#raumKopf').hidden = !!raum.olymp;
+  $('#raumVerlassen').textContent = raum.olymp ? 'Zurück zur Olympiade' : 'Raum verlassen';
   const host = raum.host === raum.du, ich = raum.mitglieder.find(m => m.id === raum.du);
   $('#raumSpieler').innerHTML = raum.mitglieder.map(m => {
     const r = L.REICH[m.reich];
@@ -114,7 +152,38 @@ function raumZeigen(){
   $('#raumStart').hidden = !host || laeuft;
   $('#raumWarten').hidden = host && !laeuft;
   $('#raumWarten').textContent = laeuft ? 'Die Schlacht läuft noch – gleich geht es weiter.' : 'Der Gastgeber startet die Schlacht.';
+  if (raum.olymp) olympRaum(host);
 }
+// Warteraum in der Olympiade: wer fehlt noch, Countdown, feste Einstellungen
+function olympRaum(host){
+  const o = raum.olymp, e = raum.einst;
+  $('#olympBanner').innerHTML = `🏅 <b>${esc(o.titel)}</b> · Disziplin ${o.nr} von ${o.von}
+    <div class="erwartet">${o.erwartet.map(x => `<span class="${x.da ? 'da' : ''}">${x.da ? '✓' : '…'} ${esc(x.n)}</span>`).join('')}</div>`;
+  $('#raumEinst').innerHTML = `<p><b>Modus:</b> Jeder gegen jeden</p><p><b>Zeitlimit:</b> ${Math.round(o.limit / 60)} Minuten – danach gewinnt das größte Reich</p>
+    <p><b>Karte:</b> ${e.karte === 'zufall' ? 'Zufall' : L.KARTE[e.karte].name}</p>`;
+  $('#raumStart').hidden = !host || o.gestartet;
+  $('#raumStart').textContent = 'Ohne die anderen beginnen';
+  $('#raumWarten').hidden = false;
+  olympWartetext();
+}
+function olympWartetext(){
+  if (!olympia || !raum || !raum.olymp || imSpiel || raum.phase !== 'lobby') return;
+  const fehlt = raum.olymp.erwartet.filter(x => !x.da).length;
+  $('#raumWarten').textContent = olympia.startBis
+    ? `Alle da! Die Schlacht beginnt in ${Math.max(0, Math.ceil((olympia.startBis - Date.now()) / 1000))} …`
+    : `Warte auf ${fehlt} Mitspieler – es geht los, sobald alle da sind.`;
+}
+// Restzeit oben im Bild
+function olympUhr(){
+  const el = $('#olympUhr');
+  const z = W.zustand;
+  const zeigen = !!(olympia && olympia.info && imSpiel && z && !z.ende);
+  el.hidden = !zeigen;
+  if (!zeigen) return;
+  const rest = Math.max(0, olympia.info.limit - z.zeit);
+  el.textContent = `🏅 ${Math.floor(rest / 60)}:${String(Math.floor(rest % 60)).padStart(2, '0')}`;
+}
+if (olympia) setInterval(() => { olympWartetext(); olympUhr(); }, 250);
 
 function einstellungenZeigen(host){
   const e = raum.einst, menschen = raum.mitglieder.length, gesamt = menschen + e.bots;
@@ -157,14 +226,17 @@ $('#raumTeilen').addEventListener('click', async () => {
     else { await navigator.clipboard.writeText(link); fehlerZeigen('Link kopiert – schick ihn deinen Freunden.', true); }
   } catch { /* Teilen abgebrochen */ }
 });
-$('#raumVerlassen').addEventListener('click', () => { trennen(); zeigeStart(); });
+$('#raumVerlassen').addEventListener('click', () => { if (olympia) return zurOlympiade(); trennen(); zeigeStart(); });
 
 // Für spiel.js: Spiel verlassen bzw. nach der Schlacht zurück in den Raum
 window.Online = {
-  verlassen(){ trennen(); },
+  get olympia(){ return olympia; },
+  zurOlympiade,
+  verlassen(){ if (olympia) return zurOlympiade(); trennen(); },
   zumRaum(){ imSpiel = false; if (raum) raumZeigen(); else { zeigeStart(); $('#online').hidden = false; } }
 };
 // Einladungslink: …/?raum=ABCD öffnet direkt die Beitreten-Ansicht
 const einladung = new URLSearchParams(location.search).get('raum');
-if (einladung){ oeffnen(); $('#raumCode').value = einladung.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); }
+if (olympia){ oeffnen(); olympLos(); }
+else if (einladung){ oeffnen(); $('#raumCode').value = einladung.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4); }
 })();
