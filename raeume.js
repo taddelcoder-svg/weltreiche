@@ -177,6 +177,7 @@ function verlassen(ws){
    Jeder gegen jeden, ohne Computergegner (außer man ist allein), Zeitlimit von der Olympiade.
    Nach Ablauf gewinnt das größte Reich. Die Reihenfolge geht an die Olympiade. */
 const OLYMP_START_MS = 6000;
+const OLYMP_WARTEN_MS = 90_000;   // fehlt jemand, geht es spätestens so lange nach dem Öffnen des Raums los
 function olympInfo(raum){
   const o = raum.olymp, da = new Set(raum.mitglieder.map(m => m.olympId));
   return {
@@ -190,15 +191,20 @@ function olympPruefen(raum){
   const da = raum.mitglieder.map(m => m.olympId);
   olymp.status(o.t, da, raum.z ? 'laeuft' : 'warten');
   const alle = o.t.m.every(e => da.includes(e.s));
-  if (raum.phase === 'lobby' && !o.gestartet && alle){
-    if (!o.startUhr){
-      o.startBis = Date.now() + OLYMP_START_MS;
-      o.startUhr = setTimeout(() => {
-        o.startUhr = null;
-        if (raeume.get(raum.code) === raum && raum.phase === 'lobby' && !o.gestartet) olympStarten(raum);
-      }, OLYMP_START_MS);
-    }
-  } else if (o.startUhr){ clearTimeout(o.startUhr); o.startUhr = null; o.startBis = 0; }
+  // Startzeit: spätestens nach der Wartezeit, sind alle da, nach dem kurzen Countdown
+  let ziel = 0;
+  if (raum.phase === 'lobby' && !o.gestartet && da.length){
+    ziel = o.spaetestens;
+    if (alle) ziel = Math.min(ziel, o.startUhr && o.startBis < o.spaetestens ? o.startBis : Date.now() + OLYMP_START_MS);
+  }
+  if (ziel === o.startBis && (o.startUhr || !ziel)) return;
+  clearTimeout(o.startUhr); o.startUhr = null; o.startBis = 0;
+  if (!ziel) return;
+  o.startBis = ziel;
+  o.startUhr = setTimeout(() => {
+    o.startUhr = null;
+    if (raeume.get(raum.code) === raum && raum.phase === 'lobby' && !o.gestartet) olympStarten(raum);
+  }, Math.max(0, ziel - Date.now()));
 }
 function olympStarten(raum){
   // Allein (oder wenn die anderen nicht kommen) gibt es einen Computergegner
@@ -258,7 +264,7 @@ function olympBeitreten(ws, raum, m){
     ziel = {
       code:neuerCode(), host:ws.id, phase:'lobby', mitglieder:[], z:null, uhr:null, plaetze:new Map(), ereignisse:[],
       einst:{ modus:'frei', bots:0, stufe:1, karte:L.KARTE[t.c.karte] ? t.c.karte : 'zufall' },
-      olymp:{ t, gestartet:false, gemeldet:false, startUhr:null, startBis:0, limit:(Number(t.c.minuten) || 10) * 60, plaetze:null }
+      olymp:{ t, gestartet:false, gemeldet:false, startUhr:null, startBis:0, spaetestens:Date.now() + OLYMP_WARTEN_MS, limit:(Number(t.c.minuten) || 10) * 60, plaetze:null }
     };
     raeume.set(ziel.code, ziel);
     olympRaeume.set(schluessel, ziel);

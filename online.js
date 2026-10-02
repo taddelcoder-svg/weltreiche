@@ -169,9 +169,10 @@ function olympRaum(host){
 function olympWartetext(){
   if (!olympia || !raum || !raum.olymp || imSpiel || raum.phase !== 'lobby') return;
   const fehlt = raum.olymp.erwartet.filter(x => !x.da).length;
-  $('#raumWarten').textContent = olympia.startBis
-    ? `Alle da! Die Schlacht beginnt in ${Math.max(0, Math.ceil((olympia.startBis - Date.now()) / 1000))} …`
-    : `Warte auf ${fehlt} Mitspieler – es geht los, sobald alle da sind.`;
+  const sek = Math.max(0, Math.ceil((olympia.startBis - Date.now()) / 1000));
+  $('#raumWarten').textContent = !olympia.startBis ? `Warte auf ${fehlt} Mitspieler – es geht los, sobald alle da sind.`
+    : fehlt ? `Warte auf ${fehlt} Mitspieler – spätestens in ${sek} s geht es los.`
+    : `Alle da! Die Schlacht beginnt in ${sek} …`;
 }
 // Restzeit oben im Bild
 function olympUhr(){
