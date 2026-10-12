@@ -1040,6 +1040,7 @@ function endeZeigen(){
   (sieg ? KLANG.sieg : KLANG.niederlage)();
   zielEnde(); ringSchliessen();
   $('#endeTitel').textContent = sieg ? 'Sieg!' : 'Niederlage';
+  $('#ende').classList.toggle('sieg', !!sieg); $('#ende').classList.toggle('niederlage', !sieg);
   const sek = Math.floor(z.zeit), zeit = `${Math.floor(sek / 60)}:${String(sek % 60).padStart(2, '0')}`;
   const sieger = z.ende && z.spieler[z.ende.sieger];
   $('#endeText').textContent = sieg ? (koop ? `Gemeinsam habt ihr die Insel erobert – nach ${zeit} Minuten.` : `Die ganze Insel gehört dir – nach ${zeit} Minuten.`)

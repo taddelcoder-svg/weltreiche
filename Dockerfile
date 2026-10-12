@@ -5,5 +5,6 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY server.js raeume.js zugang.js olymp.js index.html spiel.js logik.js bauten.js online.js datenschutz.html ./
 COPY vendor ./vendor
+COPY fonts ./fonts
 EXPOSE 10000
 CMD ["node", "server.js"]
