@@ -63,43 +63,57 @@
 <meta name="theme-color" content="#2a1d10">
 <title>Weltreiche</title>
 <style>
+  @font-face{font-family:"Bricolage Grotesque";src:url("/fonts/bricolage-grotesque.woff2") format("woff2");font-weight:200 800;font-style:normal;font-display:swap}
   :root{
-    --gold:#e8c170;--gold-dunkel:#9a6b1f;--pergament:#f4e8cc;--pergament-2:#e9d8b0;--tinte:#2e2012;--tinte-leise:#6b5536;
-    --nacht:rgba(28,19,9,.88);--rand:#b99356;
-    --schrift:"Palatino Linotype","Book Antiqua",Palatino,"URW Palladio L",Georgia,serif;
+    /* Farb-Tokens (Pergament & Gold) */
+    --flaeche:#2a1d10;--karte:#f6ecd2;--karte-2:#ecdcb4;--karte-3:#fff7e2;
+    --text:#2e2012;--text-weich:#5f4a2e;--akzent:#e8c170;--akzent-2:#9a6b1f;
+    --erfolg:#2f6a22;--warnung:#b36a00;--gefahr:#a4231b;
+    --glas:rgba(28,19,9,.78);--glas-hell:rgba(246,236,210,.92);--linie:rgba(185,147,86,.75);
+    /* alte Namen bleiben bestehen */
+    --gold:var(--akzent);--gold-dunkel:var(--akzent-2);--pergament:var(--karte);--pergament-2:var(--karte-2);--tinte:var(--text);--tinte-leise:var(--text-weich);
+    --nacht:var(--glas);--rand:var(--linie);
+    --schrift:"Bricolage Grotesque","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+    --schatten:0 1px 2px rgba(20,12,4,.25),0 6px 16px rgba(20,12,4,.22),0 18px 48px rgba(20,12,4,.32);
+    --schatten-klein:0 1px 2px rgba(20,12,4,.28),0 4px 10px rgba(20,12,4,.2);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%;overflow:hidden;background:#2a1d10;color:var(--tinte);font:16px/1.4 var(--schrift);
+  html,body{margin:0;height:100%;overflow:hidden;background:#2a1d10;color:var(--text);font:16px/1.4 var(--schrift);
     user-select:none;-webkit-user-select:none;touch-action:none}
   #szene{position:fixed;inset:0}
   #szene canvas{display:block;width:100%;height:100%}
-  button{font:inherit;cursor:pointer;color:inherit}
+  button{font:inherit;cursor:pointer;color:inherit;transition:background-color .15s,border-color .15s,transform .1s,box-shadow .15s}
   [hidden]{display:none!important}
   #schilder,#linien{position:fixed;inset:0;pointer-events:none}
   #linien{width:100%;height:100%}
+  :focus-visible{outline:3px solid var(--akzent);outline-offset:2px}
 
   /* Zahlen über Städten und Trupps */
-  .schild{position:absolute;left:0;top:0;min-width:34px;padding:2px 9px 3px;border-radius:12px;text-align:center;
-    color:#fff;font-weight:700;font-size:16px;line-height:1.1;border:2px solid rgba(0,0,0,.28);
-    text-shadow:0 1px 2px rgba(0,0,0,.45);white-space:nowrap;will-change:transform}
-  .schild.neutral{color:var(--tinte);text-shadow:none;background:#efe6d2}
-  .schild.mein{border-color:#fff8e0;box-shadow:0 0 0 2px rgba(0,0,0,.25)}
+  .schild{position:absolute;left:0;top:0;min-width:36px;padding:2px 9px 3px;border-radius:12px;text-align:center;
+    color:#fff;font-weight:800;font-size:16px;line-height:1.1;border:2px solid rgba(0,0,0,.3);font-variant-numeric:tabular-nums;
+    text-shadow:0 1px 2px rgba(0,0,0,.5);white-space:nowrap;will-change:transform;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+  .schild.neutral{color:var(--text);text-shadow:none;background:#efe6d2}
+  .schild.mein{border-color:#fff8e0;box-shadow:0 0 0 2px rgba(0,0,0,.3),0 2px 8px rgba(0,0,0,.35)}
   .schild small{display:block;font-size:10px;letter-spacing:2px;line-height:1;opacity:.9}
-  .trupp{position:absolute;left:0;top:0;padding:0 6px;border-radius:8px;color:#fff;font-weight:700;font-size:13px;
-    border:1.5px solid rgba(0,0,0,.3);text-shadow:0 1px 2px rgba(0,0,0,.5);will-change:transform}
+  .trupp{position:absolute;left:0;top:0;padding:0 7px;border-radius:9px;color:#fff;font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;
+    border:1.5px solid rgba(0,0,0,.32);text-shadow:0 1px 2px rgba(0,0,0,.55);will-change:transform;box-shadow:0 1px 4px rgba(0,0,0,.3)}
 
   /* HUD */
   #hud{position:fixed;left:0;right:0;top:0;pointer-events:none;padding:max(10px,env(safe-area-inset-top)) 12px 0}
-  #kraft{display:flex;align-items:center;gap:10px;max-width:640px;margin:0 auto}
-  #kraft .name{color:#fff;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.7);font-size:15px;white-space:nowrap}
-  #balken{flex:1;display:flex;height:14px;border-radius:7px;overflow:hidden;background:#efe6d2;border:2px solid rgba(0,0,0,.35)}
-  #balken i{display:block;height:100%;transition:width .4s}
-  #uhr{text-align:center;color:#fff;font-size:14px;margin-top:4px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
-  #meldung{position:fixed;left:50%;top:70px;transform:translateX(-50%);pointer-events:none;padding:6px 16px;border-radius:18px;
-    background:var(--nacht);color:var(--pergament);border:1px solid var(--rand);font-size:15px;opacity:0;transition:opacity .3s;white-space:nowrap}
-  #meldung.an{opacity:1}
-  .rund{position:fixed;width:46px;height:46px;border-radius:50%;border:2px solid var(--rand);background:var(--nacht);color:var(--gold);
-    font-size:20px;display:grid;place-items:center}
+  #kraft{display:flex;align-items:center;gap:10px;max-width:640px;margin:0 auto;padding:6px 14px;border-radius:99px;
+    background:var(--glas);border:1px solid var(--linie);box-shadow:var(--schatten-klein);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  #kraft .name{color:#fff6dc;font-weight:700;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  #balken{flex:1;display:flex;height:12px;border-radius:7px;overflow:hidden;background:#efe6d2;box-shadow:inset 0 1px 3px rgba(0,0,0,.45);border:1px solid rgba(0,0,0,.4)}
+  #balken i{display:block;height:100%;transition:width .4s;box-shadow:inset 0 -3px 4px rgba(0,0,0,.18),inset 0 2px 2px rgba(255,255,255,.28)}
+  #uhr{width:max-content;margin:6px auto 0;padding:2px 12px;border-radius:99px;background:var(--glas);color:#fff6dc;font-size:14px;font-weight:600;
+    font-variant-numeric:tabular-nums;border:1px solid var(--linie)}
+  #meldung{position:fixed;left:50%;top:96px;transform:translateX(-50%) translateY(-6px);pointer-events:none;padding:8px 18px;border-radius:99px;max-width:92vw;
+    background:var(--glas);color:#fff6dc;border:1px solid var(--linie);box-shadow:var(--schatten-klein);font-size:15px;font-weight:600;opacity:0;transition:opacity .3s,transform .3s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #meldung.an{opacity:1;transform:translateX(-50%)}
+  .rund{position:fixed;width:46px;height:46px;border-radius:50%;border:1px solid var(--linie);background:var(--glas);color:var(--akzent);
+    font-size:19px;display:grid;place-items:center;box-shadow:var(--schatten-klein);padding:0}
+  .rund:hover{background:rgba(54,38,20,.92);border-color:var(--akzent)}
+  .rund:active{transform:scale(.94)}
   #pauseKnopf{top:max(10px,env(safe-area-inset-top));right:12px}
   #tonKnopf{top:max(10px,env(safe-area-inset-top));right:66px}
   /* Schmale Bildschirme: Knöpfe nach unten rechts, damit die Kraftanzeige Platz hat */
@@ -109,110 +123,135 @@
     #anteil button{min-width:46px}
     #anteil span{display:none}
     #kraft .name{font-size:14px}
+    #kraft{padding:6px 12px;gap:8px}
   }
-  #anteil{position:fixed;left:12px;bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:6px;padding:6px;border-radius:14px;background:var(--nacht);border:1px solid var(--rand)}
-  #anteil button{min-width:54px;padding:8px 6px;border-radius:9px;border:0;background:transparent;color:var(--pergament);font-weight:700;font-size:16px}
-  #anteil button.aktiv{background:var(--gold);color:var(--tinte)}
-  #anteil span{align-self:center;color:var(--pergament-2);font-size:12px;padding:0 4px 0 6px;line-height:1.1}
-  #tipp{position:fixed;left:50%;top:max(64px,calc(env(safe-area-inset-top) + 56px));transform:translateX(-50%);width:min(92vw,520px);
-    padding:10px 14px;border-radius:12px;background:var(--nacht);color:var(--pergament);border:1px solid var(--rand);text-align:center;font-size:15px;pointer-events:none;transition:opacity .5s}
+  #anteil{position:fixed;left:12px;bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:4px;padding:5px;border-radius:16px;background:var(--glas);border:1px solid var(--linie);box-shadow:var(--schatten-klein)}
+  #anteil button{min-width:54px;min-height:44px;padding:8px 6px;border-radius:11px;border:0;background:transparent;color:var(--karte);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+  #anteil button:hover{background:rgba(255,255,255,.1)}
+  #anteil button:active{transform:scale(.96)}
+  #anteil button.aktiv{background:var(--akzent);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  #anteil span{align-self:center;color:#e6d6ae;font-size:12px;padding:0 6px 0 8px;line-height:1.15}
+  #tipp{position:fixed;left:50%;top:max(84px,calc(env(safe-area-inset-top) + 76px));transform:translateX(-50%);width:min(92vw,520px);
+    padding:12px 16px;border-radius:16px;background:var(--glas);color:#fff6dc;border:1px solid var(--linie);box-shadow:var(--schatten-klein);text-align:center;font-size:15px;pointer-events:none;transition:opacity .5s}
 
   /* Ringmenü an einer Stadt */
-  #ring{position:fixed;left:0;top:0;transform:translate(-50%,calc(-100% - 46px));pointer-events:auto}
-  #ringKnoepfe{display:grid;grid-template-columns:repeat(2,auto);gap:6px}
-  #ring button{display:flex;flex-direction:column;align-items:center;min-width:104px;padding:6px 10px;border-radius:12px;
-    background:var(--pergament);border:2px solid var(--gold-dunkel);color:var(--tinte);font-weight:700;box-shadow:0 4px 0 rgba(0,0,0,.3)}
-  #ring button small{font-weight:400;color:var(--tinte-leise);font-size:12px}
+  #ring{position:fixed;left:0;top:0;transform:translate(-50%,calc(-100% - 46px));pointer-events:auto;animation:auf .18s ease-out}
+  #ringKnoepfe{display:grid;grid-template-columns:repeat(2,auto);gap:6px;padding:8px;border-radius:18px;background:var(--glas);border:1px solid var(--linie);box-shadow:var(--schatten)}
+  #ring button{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:104px;min-height:48px;padding:6px 10px;border-radius:12px;
+    background:var(--karte);border:1px solid var(--akzent-2);color:var(--text);font-weight:700;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+  #ring button:not(:disabled):hover{background:var(--karte-3);border-color:var(--text)}
+  #ring button small{font-weight:500;color:var(--text-weich);font-size:12px;font-variant-numeric:tabular-nums}
   #ring button:disabled{opacity:.5;cursor:default}
-  #ring button:not(:disabled):active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
-  #ringInfo{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:4px;padding:2px 10px;border-radius:9px;background:var(--nacht);color:var(--pergament);font-size:12px;white-space:nowrap}
+  #ring button:not(:disabled):active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+  #ringInfo{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;padding:3px 12px;border-radius:99px;background:var(--glas);color:#fff6dc;border:1px solid var(--linie);font-size:12.5px;white-space:nowrap}
   #ringInfo:empty{display:none}
 
   /* Spezialfähigkeit */
-  #kraftKnopf{position:fixed;right:14px;bottom:max(14px,env(safe-area-inset-bottom));width:78px;height:78px;border-radius:50%;padding:0;border:2px solid var(--rand);
-    background:conic-gradient(var(--gold) var(--f,0%),rgba(28,19,9,.88) 0);display:grid;place-items:center}
+  #kraftKnopf{position:fixed;right:14px;bottom:max(14px,env(safe-area-inset-bottom));width:78px;height:78px;border-radius:50%;padding:0;border:2px solid var(--linie);
+    background:conic-gradient(var(--akzent) var(--f,0%),rgba(28,19,9,.88) 0);display:grid;place-items:center;box-shadow:var(--schatten-klein)}
   #kraftKnopf span{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:27px;color:#fff;background:var(--reich,#555);
-    text-shadow:0 1px 2px rgba(0,0,0,.5);opacity:.55;transition:opacity .2s}
+    text-shadow:0 1px 2px rgba(0,0,0,.5);opacity:.55;transition:opacity .2s;box-shadow:inset 0 2px 4px rgba(255,255,255,.25),inset 0 -4px 6px rgba(0,0,0,.25)}
   #kraftKnopf.bereit span{opacity:1}
   #kraftKnopf.bereit{animation:pochen 1.3s ease-in-out infinite}
+  #kraftKnopf:active{transform:scale(.95)}
   @keyframes pochen{50%{box-shadow:0 0 0 7px rgba(232,193,112,.45)}}
-  #kraftName{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 82px);width:110px;text-align:right;color:#fff;font-size:13px;
-    text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none}
-  #zielHinweis{position:fixed;left:50%;top:max(64px,calc(env(safe-area-inset-top) + 56px));transform:translateX(-50%);display:flex;gap:10px;align-items:center;
-    padding:8px 10px 8px 16px;border-radius:14px;background:var(--nacht);color:var(--pergament);border:2px solid var(--gold);white-space:nowrap}
-  #zielHinweis button{padding:5px 12px;border-radius:9px;border:1px solid var(--rand);background:transparent;color:var(--pergament)}
-  .spielerpunkt{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 3px 0 8px;border:1px solid rgba(0,0,0,.4)}
+  #kraftName{position:fixed;right:14px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 84px);width:max-content;max-width:130px;margin-left:auto;padding:2px 10px;border-radius:99px;
+    background:var(--glas);text-align:center;color:#fff6dc;font-size:12.5px;font-weight:600;pointer-events:none}
+  #kraftName:empty{display:none}
+  #zielHinweis{position:fixed;left:50%;top:max(84px,calc(env(safe-area-inset-top) + 76px));transform:translateX(-50%);display:flex;gap:10px;align-items:center;
+    padding:6px 8px 6px 16px;border-radius:16px;background:var(--glas);color:#fff6dc;border:1px solid var(--akzent);box-shadow:var(--schatten-klein);white-space:nowrap}
+  #zielHinweis button{min-height:40px;padding:5px 14px;border-radius:11px;border:1px solid var(--linie);background:rgba(255,255,255,.08);color:#fff6dc;font-weight:600}
+  #zielHinweis button:hover{background:rgba(255,255,255,.18)}
+  .spielerpunkt{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px 0 8px;border:1px solid rgba(255,255,255,.55)}
 
   /* Menüs */
-  .schicht{position:fixed;inset:0;display:grid;place-items:center;padding:16px;overflow-y:auto;background:rgba(20,13,6,.35)}
-  .karte{width:min(620px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;background:var(--pergament);border:3px solid var(--gold-dunkel);border-radius:18px;
-    padding:22px 22px 18px;box-shadow:0 12px 40px rgba(0,0,0,.45),inset 0 0 0 4px var(--pergament),inset 0 0 0 5px var(--rand)}
-  .karte.klein{width:min(400px,100%);text-align:center}
+  @keyframes auf{from{opacity:0;transform:translate(var(--ax,0),8px) scale(.98)}to{opacity:1;transform:translate(var(--ax,0),0) scale(1)}}
+  @keyframes ein{from{opacity:0}to{opacity:1}}
+  .schicht{position:fixed;inset:0;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    overflow-y:auto;background:radial-gradient(ellipse at center,rgba(20,13,6,.2),rgba(20,13,6,.55));animation:ein .2s ease-out}
+  .karte{width:min(620px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;background:linear-gradient(180deg,var(--karte-3),var(--karte));border:1px solid var(--akzent-2);border-radius:20px;
+    padding:24px 24px 18px;box-shadow:var(--schatten),inset 0 0 0 5px var(--karte),inset 0 0 0 6px rgba(185,147,86,.55);animation:auf .25s ease-out}
+  .karte.klein{width:min(420px,100%);text-align:center}
   #menue .karte{width:min(620px,100%)}
   @media (min-width:900px){
     #menue .karte{width:min(1000px,100%)}
-    .menue-raster{display:grid;grid-template-columns:1.15fr 1fr;gap:26px;align-items:start}
+    .menue-raster{display:grid;grid-template-columns:1.15fr 1fr;gap:24px;align-items:start}
     .menue-raster .reiche{grid-template-columns:1fr 1fr}
   }
-  #karteWahl .wahl{min-width:96px}
-  h1{margin:0;text-align:center;font-size:clamp(2.2rem,8vw,3.2rem);letter-spacing:4px;font-weight:700;color:var(--tinte);
-    text-transform:uppercase;line-height:1}
-  h1::after{content:"";display:block;width:140px;height:3px;margin:10px auto 0;background:linear-gradient(90deg,transparent,var(--gold-dunkel),transparent)}
-  .unter{text-align:center;margin:8px 0 14px;color:var(--tinte-leise);font-style:italic}
-  h2{margin:16px 0 8px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dunkel)}
+  #karteWahl .wahl{min-width:124px}
+  h1{margin:0;text-align:center;font-size:clamp(2.2rem,8vw,3.2rem);letter-spacing:3px;font-weight:800;color:var(--text);
+    text-transform:uppercase;line-height:1;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+  h1::after{content:"";display:block;width:140px;height:3px;margin:12px auto 0;background:linear-gradient(90deg,transparent,var(--akzent-2),transparent)}
+  .unter{text-align:center;margin:8px 0 16px;color:var(--text-weich)}
+  h2{margin:16px 0 8px;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--akzent-2);font-weight:800}
   .reiche{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
-  .reich{display:flex;gap:10px;align-items:center;text-align:left;padding:8px 10px;border-radius:12px;border:2px solid transparent;background:var(--pergament-2)}
-  .reich:hover{border-color:var(--rand)}
-  .reich.aktiv{border-color:var(--tinte);background:#fff6df}
-  .reich:focus-visible,.wahl:focus-visible,.gross:focus-visible,.knopf:focus-visible{outline:3px solid var(--tinte);outline-offset:2px}
+  .reich{display:flex;gap:12px;align-items:center;text-align:left;min-height:44px;padding:8px 12px;border-radius:16px;border:1px solid rgba(185,147,86,.4);background:var(--karte-2);box-shadow:0 1px 2px rgba(60,40,10,.12)}
+  .reich:hover{border-color:var(--akzent-2);background:#f1e2bc;transform:translateY(-1px);box-shadow:0 4px 10px rgba(60,40,10,.18)}
+  .reich:active{transform:translateY(1px);box-shadow:none}
+  .reich.aktiv{border-color:var(--text);background:var(--karte-3);box-shadow:0 0 0 2px var(--text),0 4px 12px rgba(60,40,10,.2)}
+  .reich:focus-visible,.wahl:focus-visible,.gross:focus-visible,.knopf:focus-visible,summary:focus-visible,.wappenreihe button:focus-visible{outline:3px solid var(--text);outline-offset:2px}
   .wappen{flex:none;width:42px;height:46px;display:grid;place-items:center;color:#fff;font-size:21px;
     clip-path:polygon(0 0,100% 0,100% 62%,50% 100%,0 62%);text-shadow:0 1px 2px rgba(0,0,0,.4)}
   .reich b{display:block;font-size:17px}
-  .reich small{display:block;color:var(--tinte-leise);font-size:12.5px;line-height:1.25}
+  .reich small{display:block;color:var(--text-weich);font-size:12.5px;line-height:1.25}
   .reihe{display:flex;gap:8px;flex-wrap:wrap}
-  .wahl{flex:1 1 0;min-width:90px;padding:9px 8px;border-radius:10px;border:2px solid transparent;background:var(--pergament-2);font-weight:700}
-  .wahl.aktiv{border-color:var(--tinte);background:#fff6df}
-  .gross{display:block;width:100%;margin:18px 0 10px;padding:13px;border-radius:14px;border:2px solid #6d4a12;
-    background:linear-gradient(180deg,#f3d27e,#d9a441);color:var(--tinte);font-size:1.35rem;font-weight:700;letter-spacing:1px;box-shadow:0 5px 0 #6d4a12}
-  .gross:active{transform:translateY(3px);box-shadow:0 2px 0 #6d4a12}
-  .knopf{padding:10px 18px;border-radius:12px;border:2px solid var(--gold-dunkel);background:var(--pergament-2);font-weight:700}
-  .knopfreihe{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
-  details{color:var(--tinte-leise);font-size:15px}
-  summary{cursor:pointer;color:var(--tinte);font-weight:700}
-  details ul{margin:6px 0 0;padding-left:20px}
-  .fuss{margin-top:12px;text-align:center;font-size:13px;color:var(--tinte-leise)}
-  .fuss a{color:var(--gold-dunkel)}
-  .statistik{display:grid;gap:4px 12px;text-align:left;margin:12px auto 0;max-width:380px;font-size:15px}
-  .reihe .wahl small{display:block;font-weight:400;font-size:12px;color:var(--tinte-leise)}
+  .wahl{flex:1 1 0;min-width:90px;min-height:44px;padding:9px 8px;border-radius:14px;border:1px solid rgba(185,147,86,.4);background:var(--karte-2);font-weight:700;box-shadow:0 1px 2px rgba(60,40,10,.12)}
+  .wahl:hover:not(:disabled){border-color:var(--akzent-2);background:#f1e2bc}
+  .wahl:active:not(:disabled){transform:translateY(1px)}
+  .wahl.aktiv{border-color:var(--text);background:var(--karte-3);box-shadow:0 0 0 2px var(--text)}
+  .gross{display:block;width:100%;min-height:52px;margin:18px 0 10px;padding:13px;border-radius:16px;border:1px solid #6d4a12;
+    background:linear-gradient(180deg,#f6d886,#d9a441);color:var(--text);font-size:1.3rem;font-weight:800;letter-spacing:.5px;box-shadow:0 5px 0 #6d4a12,0 8px 18px rgba(60,40,10,.3),inset 0 1px 0 rgba(255,255,255,.5)}
+  .gross:hover{background:linear-gradient(180deg,#fbe29a,#e2ae4d)}
+  .gross:active{transform:translateY(3px);box-shadow:0 2px 0 #6d4a12,0 3px 8px rgba(60,40,10,.3),inset 0 1px 0 rgba(255,255,255,.5)}
+  .knopf{min-height:44px;padding:10px 18px;border-radius:14px;border:1px solid var(--akzent-2);background:var(--karte-2);font-weight:700;box-shadow:0 2px 0 rgba(109,74,18,.45)}
+  .knopf:hover{background:#f1e2bc;border-color:var(--text)}
+  .knopf:active{transform:translateY(2px);box-shadow:none}
+  .knopf.gefahr,#aufgeben{border-color:#7d1a14;color:#7d1a14;background:#f7e1da}
+  .knopf.gefahr:hover,#aufgeben:hover{background:#f3cfc6;border-color:var(--gefahr)}
+  .knopfreihe{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+  details{color:var(--text-weich);font-size:15px;margin-top:12px;padding:8px 12px;border-radius:14px;background:rgba(185,147,86,.12);border:1px solid rgba(185,147,86,.3)}
+  summary{cursor:pointer;color:var(--text);font-weight:700;min-height:28px;display:list-item;padding:2px 0}
+  details ul{margin:6px 0 4px;padding-left:20px}
+  details li{margin-bottom:4px}
+  .fuss{margin-top:12px;text-align:center;font-size:13px;color:var(--text-weich)}
+  .fuss a{color:var(--akzent-2);font-weight:700}
+  .statistik{display:grid;gap:6px 14px;text-align:left;margin:14px auto 0;max-width:380px;font-size:15px;padding:12px 16px;border-radius:16px;background:var(--karte-2);border:1px solid rgba(185,147,86,.4);font-variant-numeric:tabular-nums}
+  .reihe .wahl small{display:block;font-weight:400;font-size:12px;color:var(--text-weich)}
   .wahl:disabled{opacity:.4;cursor:default}
-  .reich small i{font-style:normal;color:var(--gold-dunkel)}
+  .reich small i{font-style:normal;color:var(--akzent-2);font-weight:700}
   .statistik b{text-align:right}
-  .ende-titel{font-size:2.4rem;margin:0;letter-spacing:3px;text-transform:uppercase}
+  .ende-titel{font-size:2.6rem;font-weight:800;margin:0;letter-spacing:2px;text-transform:uppercase;line-height:1.1}
+  #ende.sieg .ende-titel{color:#8a5a0c;text-shadow:0 1px 0 #fff3c9,0 0 24px rgba(232,193,112,.9);animation:sieg .7s cubic-bezier(.2,1.4,.4,1)}
+  #ende.niederlage .ende-titel{color:#6b2a22}
+  #ende.sieg .karte{border-color:#c8921f;box-shadow:var(--schatten),0 0 0 3px rgba(232,193,112,.55),inset 0 0 0 5px var(--karte),inset 0 0 0 6px rgba(185,147,86,.55)}
+  @keyframes sieg{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
   .knopf.breit{display:block;width:100%}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   #online .karte{width:min(620px,100%)}
   @media (min-width:900px){ #online .karte{width:min(900px,100%)} }
   .feld{display:block;font-weight:700;margin:6px 0 4px}
-  .feld input,#raumCode{display:block;width:100%;margin-top:6px;padding:10px 12px;border-radius:10px;border:2px solid var(--rand);
-    background:#fffaf0;color:var(--tinte);font:inherit;font-size:18px}
-  .klein{font-size:13px;color:var(--tinte-leise);margin:4px 0 0}
+  .feld input,#raumCode{display:block;width:100%;min-height:48px;margin-top:6px;padding:10px 14px;border-radius:14px;border:1px solid var(--akzent-2);
+    background:#fffaf0;color:var(--text);font:inherit;font-size:18px;box-shadow:inset 0 2px 4px rgba(60,40,10,.12)}
+  .feld input:focus-visible,#raumCode:focus-visible{outline:3px solid var(--akzent);outline-offset:1px;border-color:var(--text)}
+  .klein{font-size:13px;color:var(--text-weich);margin:4px 0 0}
   .beitreten{display:flex;gap:8px;align-items:stretch;margin-top:4px}
   #raumCode{margin:0;text-transform:uppercase;letter-spacing:6px;text-align:center;font-weight:700;flex:1}
-  .fehler{color:#a4231b;font-weight:700;min-height:1.2em;margin:10px 0 0}
+  .fehler{color:var(--gefahr);font-weight:700;min-height:1.2em;margin:10px 0 0}
   .raumcode{text-align:center;margin:10px 0 0;font-size:18px}
-  .olymp-banner{margin:10px 0 4px;padding:10px 14px;border-radius:12px;background:var(--pergament-2);border:2px solid var(--gold-dunkel);text-align:center}
+  .olymp-banner{margin:10px 0 4px;padding:12px 16px;border-radius:16px;background:var(--karte-2);border:1px solid var(--akzent-2);text-align:center;box-shadow:var(--schatten-klein)}
   .olymp-banner .erwartet{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:8px}
-  .olymp-banner .erwartet span{padding:2px 10px;border-radius:99px;background:var(--pergament);border:1px solid var(--rand);font-size:15px}
-  .olymp-banner .erwartet span.da{border-color:#3d7a2e;color:#2f6a22;font-weight:700}
-  #olympUhr{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:30;padding:4px 14px;border-radius:99px;background:var(--nacht);color:var(--gold);font:700 17px var(--schrift);pointer-events:none}
-  .raumcode b{display:inline-block;margin-left:8px;padding:4px 14px;border-radius:10px;background:var(--tinte);color:var(--gold);letter-spacing:6px;font-size:28px}
+  .olymp-banner .erwartet span{padding:2px 12px;border-radius:99px;background:var(--karte);border:1px solid var(--linie);font-size:15px}
+  .olymp-banner .erwartet span.da{border-color:#3d7a2e;color:var(--erfolg);font-weight:700}
+  #olympUhr{position:fixed;top:max(10px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:30;padding:4px 14px;border-radius:99px;background:var(--glas);border:1px solid var(--linie);color:var(--akzent);font:700 17px var(--schrift);font-variant-numeric:tabular-nums;pointer-events:none}
+  .raumcode b{display:inline-block;margin-left:8px;padding:4px 16px;border-radius:14px;background:var(--text);color:var(--akzent);letter-spacing:6px;font-size:28px;box-shadow:inset 0 2px 6px rgba(0,0,0,.4)}
   #raumSpieler{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-  #raumSpieler li{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;background:var(--pergament-2)}
+  #raumSpieler li{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:14px;background:var(--karte-2);border:1px solid rgba(185,147,86,.35)}
   #raumSpieler li .wappen{width:30px;height:33px;font-size:15px}
-  #raumSpieler li small{color:var(--tinte-leise);margin-left:auto}
+  #raumSpieler li small{color:var(--text-weich);margin-left:auto}
   .wappenreihe{display:flex;flex-wrap:wrap;gap:6px}
-  .wappenreihe button{border:2px solid transparent;background:var(--pergament-2);border-radius:10px;padding:4px;display:flex;flex-direction:column;align-items:center;min-width:70px;font-size:12px}
-  .wappenreihe button.aktiv{border-color:var(--tinte);background:#fff6df}
+  .wappenreihe button{border:1px solid rgba(185,147,86,.4);background:var(--karte-2);border-radius:14px;padding:6px;display:flex;flex-direction:column;align-items:center;min-width:70px;min-height:44px;font-size:12px;font-weight:600}
+  .wappenreihe button:hover:not(:disabled){border-color:var(--akzent-2);background:#f1e2bc}
+  .wappenreihe button.aktiv{border-color:var(--text);background:var(--karte-3);box-shadow:0 0 0 2px var(--text)}
   .wappenreihe button:disabled{opacity:.35;cursor:default}
   .wappenreihe .wappen{width:34px;height:37px;font-size:17px}
   #raumEinst .reihe{margin-bottom:8px}
@@ -221,9 +260,19 @@
   @media (max-width:700px){
     #kraftKnopf{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 58px);width:70px;height:70px}
     #kraftKnopf span{width:56px;height:56px;font-size:24px}
-    #kraftName{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 132px)}
+    #kraftName{bottom:calc(max(14px,env(safe-area-inset-bottom)) + 134px)}
     #ring button{min-width:0;padding:5px 9px;font-size:14px}
     #ring button small{font-size:11px}
+    .karte{padding:20px 16px 16px}
+    .ende-titel{font-size:2.2rem}
+  }
+  @media (max-height:480px){
+    .karte{padding:14px 18px 12px}
+    h1{font-size:2rem}
+    .unter{margin:4px 0 8px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   }
 </style>
 </head>
@@ -297,7 +346,7 @@
     <p class="unter" id="pauseText" hidden>Online läuft das Spiel für alle weiter.</p>
     <div class="knopfreihe">
       <button class="knopf" id="weiter">Weiter</button>
-      <button class="knopf" id="aufgeben">Aufgeben</button>
+      <button class="knopf gefahr" id="aufgeben">Aufgeben</button>
     </div>
   </div>
 </div>

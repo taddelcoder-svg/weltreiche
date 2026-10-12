@@ -7,7 +7,7 @@ const zugang = require('./zugang')({ titel:'Weltreiche' });
 
 const PORT = Number(process.env.PORT) || 10300;
 const TYPEN = {
-  '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.txt':'text/plain; charset=utf-8'
+  '.html':'text/html; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.txt':'text/plain; charset=utf-8', '.woff2':'font/woff2'
 };
 // Nur diese Dateien werden ausgeliefert
 const DATEIEN = new Map([
@@ -32,6 +32,9 @@ const server = http.createServer((req, res) => {
   // Selbst ausgeliefertes three.js (keine Verbindung zu CDNs)
   const vendor = /^\/vendor\/([\w-]+(?:\.[\w-]+)*\.(js|txt))$/.exec(url.pathname);
   if (req.method === 'GET' && vendor) return senden(res, path.join('vendor', vendor[1]), 'public, max-age=604800');
+  // Selbst ausgelieferte Schrift (Bricolage Grotesque, SIL OFL) – Erlaubnisliste, keine freie Pfadauswahl
+  if (req.method === 'GET' && url.pathname === '/fonts/bricolage-grotesque.woff2') return senden(res, 'fonts/bricolage-grotesque.woff2', 'public, max-age=604800');
+  if (req.method === 'GET' && url.pathname === '/fonts/OFL-Bricolage.txt') return senden(res, 'fonts/OFL-Bricolage.txt', 'public, max-age=604800');
   if (req.method === 'GET' && DATEIEN.has(url.pathname)) return senden(res, DATEIEN.get(url.pathname), 'no-cache');
   res.writeHead(404, { 'Content-Type':'text/plain; charset=utf-8' });
   res.end('Nicht gefunden');
