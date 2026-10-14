@@ -1444,6 +1444,7 @@ function endeZeigen(){
   if (ICH < 0) return;
   const sieg = !!z.ende && z.ende.team === z.spieler[ICH].team;
   const koop = z.spieler.filter(s => s.team === z.spieler[ICH].team).length > 1;
+  if (z.ende && !z.ende.slGez) { z.ende.slGez = 1; window.SLZaehle && SLZaehle('sl_weltreiche', s => { s.spiele = (s.spiele || 0) + 1; if (sieg) { s.siege = (s.siege || 0) + 1; (s.reiche = s.reiche || {})[z.spieler[ICH].reich] = 1; } }); }
   (sieg ? KLANG.sieg : KLANG.niederlage)();
   zielEnde(); ringSchliessen();
   $('#endeTitel').textContent = sieg ? 'Sieg!' : 'Niederlage';
